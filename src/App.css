@@ -1,0 +1,71 @@
+/* Custom styles to complement Bootstrap */
+.text-purple {
+  color: #6a11cb;
+}
+
+.bg-purple {
+  background-color: #6a11cb;
+}
+
+/* Ensure bottom nav doesn't cover content */
+body {
+  padding-bottom: 70px;
+}
+
+/* Custom rounded corners */
+.rounded-4 {
+  border-radius: 1rem !important;
+}
+
+/* Transitions */
+.list-group-item {
+  transition: background-color 0.2s;
+}
+
+/* Mobile specific tweaks */
+@media (max-width: 576px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(2px) rotate(1deg); }
+}
+.animate-shake {
+  animation: shake 0.1s infinite;
+}
+
+@keyframes breathing {
+  0%, 100% { background-color: rgba(0,0,0,1); }
+  50% { background-color: rgba(20,20,35,1); }
+}
+.animate-breathing {
+  animation: breathing 4s ease-in-out infinite;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
