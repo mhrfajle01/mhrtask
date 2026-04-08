@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Page Not Found</title>
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
+      // This script takes the current url and converts the path and query
+      // string into a hash, then redirects the browser to the new url
+      // with the hash and optionally preserves the old url as history.
+      // This is a workaround for the fact that GitHub Pages only supports
+      // static files and does not support server-side routing.
+      // So, if a user directly accesses a route like /my-app/about,
+      // GitHub Pages returns a 404, but this script redirects them to
+      // /my-app/#/about, which GitHub Pages *can* serve (index.html),
+      // and then the React Router (or other client-side router) takes over.
+      var path = window.location.pathname;
+      var query = window.location.search;
+      var hash = window.location.hash;
+      if (path.includes('index.html')) {
+        window.location.replace(path.replace('index.html', '') + query + hash);
+      }
+      var redirect = path.includes('/mhrtask/') ? '/mhrtask/index.html' : '/index.html';
+      window.location.replace(redirect + '#' + path + query);
+    </script>
+  </head>
+  <body>
+    <!-- If you're not using a redirect script, you might want to include some content here -->
+  </body>
+</html>
