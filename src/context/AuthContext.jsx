@@ -8,6 +8,7 @@ import {
 import { auth, db } from "../firebase/config";
 import { doc, getDoc, setDoc, onSnapshot, updateDoc, increment, writeBatch, collection, getDocs } from "firebase/firestore";
 import confetti from "canvas-confetti";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const AuthContext = createContext();
 
@@ -73,10 +74,7 @@ export const AuthProvider = ({ children }) => {
             yesterdayDate.setDate(yesterdayDate.getDate() - 1);
             const yesterdayStr = yesterdayDate.toDateString();
             
-            // Streak breaks ONLY if the user didn't even "Protect" it yesterday
-            // (If they didn't do 2 actions or didn't lock the day)
             if (data.lastActiveDate !== yesterdayStr || (!data.dayLocked && !data.isProtected)) {
-              // If they missed a whole day, or didn't meet Bronze requirements yesterday
               if (data.lastActiveDate !== yesterdayStr) {
                 update.streak = 0;
               }
@@ -84,7 +82,6 @@ export const AuthProvider = ({ children }) => {
             
             await updateDoc(userRef, update);
 
-            // Daily Routine Reset
             if (data.lastResetDate !== today) {
               const batch = writeBatch(db);
               const routinesRef = collection(db, "users", user.uid, "routines");
@@ -114,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Circadian Timer Logic (Fixed Overcounting)
+  // Circadian Timer Logic
   useEffect(() => {
     if (!currentUser || !userData) return;
     
@@ -141,7 +138,6 @@ export const AuthProvider = ({ children }) => {
           const isAfternoonDone = segment === "afternoonTime" ? ((userData.afternoonTime || 0) + 20 >= 120) : (userData.afternoonTime >= 120);
           const isNightDone = segment === "nightTime" ? ((userData.nightTime || 0) + 20 >= 120) : (userData.nightTime >= 120);
           
-          // GOLD LOCK: All 3 Windows + 2 Actions
           if (isMorningDone && isAfternoonDone && isNightDone && (userData.actionsToday >= 2) && !userData.dayLocked) {
             update.dayLocked = true;
             const newStreak = (userData.streak || 0) + 1;
@@ -165,8 +161,6 @@ export const AuthProvider = ({ children }) => {
     if (navigator.vibrate) navigator.vibrate(25);
 
     const userRef = doc(db, "users", currentUser.uid);
-    
-    // Diminishing returns: Track actions per day to scale XP
     const actionsToday = (userData?.actionsToday || 0);
     let efficiency = 1.0;
     if (actionsToday > 3) efficiency = 0.5;
@@ -182,8 +176,6 @@ export const AuthProvider = ({ children }) => {
     if (amount > 0) {
       updateData.actionsToday = increment(1);
       const currentActions = (userData?.actionsToday || 0) + 1;
-      
-      // BRONZE PROTECT: 2 Actions met
       if (currentActions >= 2 && !userData?.isProtected) {
         updateData.isProtected = true;
       }
@@ -198,7 +190,6 @@ export const AuthProvider = ({ children }) => {
     const isNightDone = (userData?.nightTime || 0) >= 120;
     const currentActions = (userData?.actionsToday || 0) + (amount > 0 ? 1 : 0);
 
-    // GOLD LOCK check
     if (isMorningDone && isAfternoonDone && isNightDone && currentActions >= 2 && !userData?.dayLocked) {
       updateData.dayLocked = true;
       const newStreak = (userData?.streak || 0) + 1;
@@ -219,11 +210,11 @@ export const AuthProvider = ({ children }) => {
     await updateDoc(userRef, updateData);
   };
 
-  const value = { currentUser, userData, signup, login, logout, addXP };
+  const value = { currentUser, userData, signup, login, logout, addXP, loading };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? <LoadingSpinner /> : children}
     </AuthContext.Provider>
   );
 };
