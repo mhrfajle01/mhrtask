@@ -6,7 +6,7 @@ import {
   signOut 
 } from "firebase/auth";
 import { auth, db } from "../firebase/config";
-import { doc, getDoc, setDoc, onSnapshot, updateDoc, increment, writeBatch, collection, getDocs, addDoc, query, orderBy, limit, serverTimestamp, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, updateDoc, increment, writeBatch, collection, getDocs, addDoc, query, orderBy, limit, serverTimestamp, where, deleteDoc } from "firebase/firestore";
 import confetti from "canvas-confetti";
 import LoadingSpinner from "../components/LoadingSpinner";
 import playSound from "../utils/sfx";
@@ -29,20 +29,38 @@ export const AuthProvider = ({ children }) => {
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   const logout = () => signOut(auth);
 
+  const deleteNotification = async (notifId) => {
+    if (!currentUser) return;
+    try {
+      await deleteDoc(doc(db, "users", currentUser.uid, "notifications", notifId));
+    } catch (e) { console.error("Delete notif error", e); }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!currentUser || notifications.length === 0) return;
+    try {
+      const batch = writeBatch(db);
+      notifications.forEach(n => {
+        batch.delete(doc(db, "users", currentUser.uid, "notifications", n.id));
+      });
+      await batch.commit();
+    } catch (e) { console.error("Clear notifs error", e); }
+  };
+
   const pushNotification = async (notif) => {
     if (!currentUser) return;
     try {
-      // FIX: Simplified query to avoid composite index error
-      if (notif.type === 'xp_gain') {
+      // FIX: Improved stacking for both gains and penalties
+      if (notif.type === 'xp_gain' || notif.type === 'penalty') {
         const recentNotifsQuery = query(
           collection(db, "users", currentUser.uid, "notifications"),
           orderBy("timestamp", "desc"),
-          limit(3) // Check last few to see if we can stack
+          limit(5)
         );
         const snapshot = await getDocs(recentNotifsQuery);
         const match = snapshot.docs.find(d => {
           const data = d.data();
-          return data.type === 'xp_gain' && data.statType === notif.statType && !data.read;
+          return data.type === notif.type && data.statType === notif.statType && !data.read;
         });
 
         if (match) {
@@ -52,12 +70,14 @@ export const AuthProvider = ({ children }) => {
           
           if (lastTime > tenMinsAgo) {
             const newCount = (lastData.stackCount || 1) + 1;
-            const newXP = (lastData.totalXP || lastData.amount || 0) + (notif.amount || 0);
+            const currentAmount = lastData.totalXP || lastData.amount || 0;
+            const newXP = currentAmount + (notif.amount || 0);
+            
             await updateDoc(match.ref, {
               totalXP: newXP,
               stackCount: newCount,
-              title: `+${newXP} ${notif.statType.toUpperCase()} XP`,
-              message: `Accumulated from ${newCount} activities.`,
+              title: notif.type === 'penalty' ? `${newXP} ${notif.statType.toUpperCase()} XP` : `+${newXP} ${notif.statType.toUpperCase()} XP`,
+              message: `Accumulated from ${newCount} events.`,
               timestamp: serverTimestamp()
             });
             return;
@@ -75,7 +95,8 @@ export const AuthProvider = ({ children }) => {
 
       await addDoc(collection(db, "users", currentUser.uid, "notifications"), finalNotif);
       setActiveToast(finalNotif);
-      playSound(notif.rarity === 'epic' || notif.rarity === 'legendary' ? 'fanfare' : 'complete');
+      const sound = notif.type === 'penalty' ? 'fail' : (notif.rarity === 'epic' || notif.rarity === 'legendary' ? 'fanfare' : 'complete');
+      playSound(sound);
       setTimeout(() => setActiveToast(null), 4000);
     } catch (e) { console.error("Notif error", e); }
   };
@@ -211,6 +232,18 @@ export const AuthProvider = ({ children }) => {
       if (statType) {
         pushNotification({ type: 'xp_gain', amount: adjustedAmount, statType, title: `+${adjustedAmount} ${statType.toUpperCase()} XP`, message: `Progress in ${statType.toUpperCase()}.`, icon: 'bi-lightning-fill', color: 'primary', rarity: 'common', category: 'progression' });
       }
+    } else if (amount < 0 && statType) {
+      pushNotification({ 
+        type: 'penalty', 
+        amount: adjustedAmount, 
+        statType, 
+        title: `${adjustedAmount} ${statType.toUpperCase()} XP`, 
+        message: `Penalty applied to ${statType.toUpperCase()}.`, 
+        icon: 'bi-graph-down', 
+        color: 'danger', 
+        rarity: 'common', 
+        category: 'progression' 
+      });
     }
     if (statType && ['str', 'int', 'spr', 'cha'].includes(statType)) updateData[statType] = increment(amount > 0 ? 1 : -1);
     
@@ -246,7 +279,7 @@ export const AuthProvider = ({ children }) => {
     await batch.commit();
   };
 
-  const value = { currentUser, userData, signup, login, logout, addXP, loading, notifications, unreadCount, markAllAsRead, activeToast };
+  const value = { currentUser, userData, signup, login, logout, addXP, loading, notifications, unreadCount, markAllAsRead, activeToast, deleteNotification, clearAllNotifications };
   return (
     <AuthContext.Provider value={value}>
       {loading ? <LoadingSpinner /> : children}

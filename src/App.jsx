@@ -13,6 +13,7 @@ import Journal from "./pages/Journal";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
+import Help from "./pages/Help";
 import LoadingSpinner from "./components/LoadingSpinner";
 
 import "./App.css";
@@ -75,6 +76,11 @@ function AppContent() {
         <Route path="/notifications" element={
           <ProtectedRoute>
             <Notifications />
+          </ProtectedRoute>
+        } />
+        <Route path="/help" element={
+          <ProtectedRoute>
+            <Help />
           </ProtectedRoute>
         } />
       </Routes>

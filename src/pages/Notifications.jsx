@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 
 const Notifications = () => {
-  const { notifications, markAllAsRead } = useAuth();
+  const { notifications, markAllAsRead, deleteNotification, clearAllNotifications } = useAuth();
   const [filter, setFilter] = useState('all');
   const navigate = useNavigate();
 
@@ -60,8 +60,18 @@ const Notifications = () => {
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4 px-2">
-        <h2 className="fw-bold m-0 h3">Activity Log</h2>
-        <span className="badge bg-light text-dark rounded-pill border">{notifications.length} Total</span>
+        <div>
+          <h2 className="fw-bold m-0 h3">Activity Log</h2>
+          <span className="badge bg-light text-dark rounded-pill border mt-1">{notifications.length} Total</span>
+        </div>
+        {notifications.length > 0 && (
+          <button 
+            onClick={() => { if(window.confirm('Clear all activity?')) clearAllNotifications() }}
+            className="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold"
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
       {/* Category Filters */}
@@ -107,7 +117,16 @@ const Notifications = () => {
                                 {notif.title}
                                 {notif.stackCount > 1 && <span className="ms-2 badge bg-primary bg-opacity-10 text-primary small">x{notif.stackCount}</span>}
                               </h6>
-                              <small className="text-muted" style={{ fontSize: '0.7rem' }}>{formatTime(notif.timestamp)}</small>
+                              <div className="d-flex align-items-center gap-2">
+                                <small className="text-muted" style={{ fontSize: '0.7rem' }}>{formatTime(notif.timestamp)}</small>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id); }}
+                                  className="btn btn-link text-muted p-0 lh-1"
+                                  title="Delete"
+                                >
+                                  <i className="bi bi-x-circle-fill"></i>
+                                </button>
+                              </div>
                             </div>
                             <p className="small text-muted mb-0 mt-1">{notif.message}</p>
                           </div>
