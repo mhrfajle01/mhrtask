@@ -2,19 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/config";
-import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, query, onSnapshot } from "firebase/firestore";
+import InstallApp from "../components/InstallApp";
 
 const Dashboard = () => {
   const { currentUser, userData } = useAuth();
-  const [taskStats, setTaskStats] = useState({ completed: 0, total: 0 });
 
   useEffect(() => {
     if (!currentUser) return;
     const q = query(collection(db, "users", currentUser.uid, "routines"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allTasks = snapshot.docs.map(doc => doc.data());
-      const completed = allTasks.filter(t => t.completed).length;
-      setTaskStats({ completed, total: allTasks.length });
+      // Logic for summary if needed, otherwise just keeping listener for consistency
     });
     return () => unsubscribe();
   }, [currentUser]);
@@ -55,6 +53,7 @@ const Dashboard = () => {
 
   return (
     <div className="container py-4 mb-5">
+      <InstallApp />
       <div className="row g-3">
         
         {/* Connection Odometer (Mastery Map) */}
@@ -206,31 +205,31 @@ const Dashboard = () => {
 
         {/* Life Stats Grid */}
         <div className="col-12">
-          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
-            <h6 className="fw-bold text-secondary mb-3 px-1 text-start">Life Stats</h6>
-            <div className="row g-2">
-              <div className="col-3">
-                <div className="p-2 rounded-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10">
-                  <div className="fw-bold fs-5">{userData?.str || 0}</div>
-                  <small style={{ fontSize: "10px" }}>STR</small>
+          <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h6 className="fw-bold text-secondary mb-3 px-1">Life Stats</h6>
+            <div className="row g-3">
+              <div className="col-6">
+                <div className="p-3 rounded-4 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10 text-center shadow-sm">
+                  <div className="fw-bold fs-3">{userData?.str || 0}</div>
+                  <div className="fw-bold small text-uppercase" style={{ fontSize: "11px", letterSpacing: "1px" }}>Strength</div>
                 </div>
               </div>
-              <div className="col-3">
-                <div className="p-2 rounded-3 bg-info bg-opacity-10 text-info border border-info border-opacity-10">
-                  <div className="fw-bold fs-5">{userData?.int || 0}</div>
-                  <small style={{ fontSize: "10px" }}>INT</small>
+              <div className="col-6">
+                <div className="p-3 rounded-4 bg-info bg-opacity-10 text-info border border-info border-opacity-10 text-center shadow-sm">
+                  <div className="fw-bold fs-3">{userData?.int || 0}</div>
+                  <div className="fw-bold small text-uppercase" style={{ fontSize: "11px", letterSpacing: "1px" }}>Intelligence</div>
                 </div>
               </div>
-              <div className="col-3">
-                <div className="p-2 rounded-3 bg-success bg-opacity-10 text-success border border-success border-opacity-10">
-                  <div className="fw-bold fs-5">{userData?.spr || 0}</div>
-                  <small style={{ fontSize: "10px" }}>SPR</small>
+              <div className="col-6">
+                <div className="p-3 rounded-4 bg-success bg-opacity-10 text-success border border-success border-opacity-10 text-center shadow-sm">
+                  <div className="fw-bold fs-3">{userData?.spr || 0}</div>
+                  <div className="fw-bold small text-uppercase" style={{ fontSize: "11px", letterSpacing: "1px" }}>Spirit</div>
                 </div>
               </div>
-              <div className="col-3">
-                <div className="p-2 rounded-3 bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-10">
-                  <div className="fw-bold fs-5">{userData?.cha || 0}</div>
-                  <small style={{ fontSize: "10px" }}>CHA</small>
+              <div className="col-6">
+                <div className="p-3 rounded-4 bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-10 text-center shadow-sm">
+                  <div className="fw-bold fs-3">{userData?.cha || 0}</div>
+                  <div className="fw-bold small text-uppercase" style={{ fontSize: "11px", letterSpacing: "1px" }}>Charisma</div>
                 </div>
               </div>
             </div>
@@ -238,9 +237,9 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Links */}
-        <div className="col-12 mt-2">
+        <div className="col-12 mt-2 pb-4">
           <h5 className="fw-bold px-1 mb-3">Quick Links</h5>
-          <div className="list-group shadow-sm border-0 rounded-4 overflow-hidden">
+          <div className="list-group shadow-sm border-0 rounded-4 overflow-hidden mb-5">
             <Link to="/routine" className="list-group-item list-group-item-action border-0 p-3 d-flex align-items-center">
               <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3 text-primary"><i className="bi bi-list-task fs-5"></i></div>
               <div><div className="fw-bold">Routine Planner</div><small className="text-muted">Habits</small></div>

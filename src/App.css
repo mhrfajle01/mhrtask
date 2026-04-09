@@ -9,7 +9,12 @@
 
 /* Ensure bottom nav doesn't cover content */
 body {
-  padding-bottom: 70px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+
+/* Ensure fixed bottom nav respects safe areas */
+.fixed-bottom {
+  padding-bottom: env(safe-area-inset-bottom) !important;
 }
 
 /* Custom rounded corners */
@@ -86,7 +91,25 @@ body {
   transition: opacity 300ms ease-in, transform 300ms ease-out;
 }
 
-/* New CSS for route transitions */
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-down {
+  animation: slideDown 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.shadow-info-sm { box-shadow: 0 0 10px rgba(13, 202, 240, 0.3); }
+.shadow-warning-sm { box-shadow: 0 0 10px rgba(255, 193, 7, 0.3); }
+.shadow-legendary { box-shadow: 0 0 20px rgba(220, 53, 69, 0.4); }
+
+.letter-spacing-1 { letter-spacing: 1px; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.transition-all { transition: all 0.2s ease-in-out; }
+
+/* Route transitions */
 .route-transition-wrapper {
   position: absolute;
   top: 0;

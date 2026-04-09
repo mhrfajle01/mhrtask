@@ -14,27 +14,35 @@ const Routine = () => {
   const [timeLeft, setTimeLeft] = useState("");
   const [deleteTask, setDeleteTask] = useState(null);
 
-  // Penalty Check: Run when tasks load
+  const [processing, setProcessing] = useState(false);
+
+  // Penalty Check: Run only when activeTab or tasks change significantly
   useEffect(() => {
-    if (!tasks.length || !currentUser) return;
+    if (!tasks.length || !currentUser || processing) return;
     
     const now = new Date();
     const currentHour = now.getHours();
 
-    tasks.forEach(async (task) => {
-      if (task.completed) return;
-      
-      const isPastDeadline = 
-        (task.timeOfDay === 'morning' && currentHour >= 12) ||
-        (task.timeOfDay === 'afternoon' && currentHour >= 18) ||
-        (task.timeOfDay === 'night' && currentHour >= 3 && currentHour < 3);
-      
-      if (isPastDeadline) {
-        await addXP(-20, task.statType);
-        await updateDoc(doc(db, "users", currentUser.uid, "routines", task.id), { completed: true, failed: true });
+    const checkPenalties = async () => {
+      for (const task of tasks) {
+        if (task.completed) continue;
+        
+        const taskCreatedToday = task.createdAt?.toDate ? task.createdAt.toDate().toDateString() === now.toDateString() : true;
+        
+        const isPastDeadline = 
+          (task.timeOfDay === 'morning' && currentHour >= 12) ||
+          (task.timeOfDay === 'afternoon' && currentHour >= 18) ||
+          (task.timeOfDay === 'night' && currentHour >= 3 && currentHour < 18);
+        
+        if (isPastDeadline && !taskCreatedToday) {
+          await addXP(-20, task.statType);
+          await updateDoc(doc(db, "users", currentUser.uid, "routines", task.id), { completed: true, failed: true });
+        }
       }
-    });
-  }, [tasks]);
+    };
+
+    checkPenalties();
+  }, [activeTab, tasks.length]); // Only run on tab switch or count change
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFocusPortal, setShowFocusPortal] = useState(false);
@@ -80,6 +88,7 @@ const Routine = () => {
   };
 
   const handleOpenFocus = (task) => {
+    if (processing || task.completed) return;
     playSound('click');
     setActiveTask(task);
     setShowFocusPortal(true);
@@ -106,18 +115,28 @@ const Routine = () => {
   };
 
   const toggleComplete = async (task) => {
-    const taskRef = doc(db, "users", currentUser.uid, "routines", task.id);
-    const newStatus = !task.completed;
-    const xpReward = difficulties[task.difficulty || 'medium'].xp;
+    if (processing) return;
+    setProcessing(true);
     
-    await updateDoc(taskRef, { completed: newStatus });
-    await addXP(newStatus ? xpReward : -xpReward, task.statType);
-    
-    if (newStatus) {
-      playSound('fanfare');
-      confetti({ particleCount: 80, spread: 100, origin: { y: 0.8 } });
+    try {
+      const taskRef = doc(db, "users", currentUser.uid, "routines", task.id);
+      const newStatus = !task.completed;
+      const xpReward = difficulties[task.difficulty || 'medium'].xp;
+      
+      // Explicitly set status to prevent toggle battles
+      await updateDoc(taskRef, { completed: newStatus });
+      await addXP(newStatus ? xpReward : -xpReward, task.statType);
+      
+      if (newStatus) {
+        playSound('fanfare');
+        confetti({ particleCount: 80, spread: 100, origin: { y: 0.8 } });
+      }
+      if (showFocusPortal) setShowFocusPortal(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => setProcessing(false), 500); // Short lock-out
     }
-    if (showFocusPortal) setShowFocusPortal(false);
   };
 
   const PhaseGuardian = ({ type }) => {
